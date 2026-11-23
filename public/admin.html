@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Ranim Shop – لوحة المدير</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#FFF8FA;--s:#fff;--ink:#3B1F2C;--mu:#85606F;--br:#B02A62;--bi:#fff;--so:#FBE3EB;--ln:#F2C9D8;--er:#B3261E}
+@media(prefers-color-scheme:dark){:root{--bg:#1D1217;--s:#291A22;--ink:#F8E8EF;--mu:#C9A3B3;--br:#E0568C;--bi:#25101A;--so:#35212B;--ln:#4A2E3B;--er:#FF9A92}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "Tajawal",system-ui,sans-serif;padding:0 0 40px}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--br);outline-offset:2px}
+header{position:sticky;top:0;z-index:5;background:var(--s);border-bottom:1px solid var(--ln);padding:10px 14px;display:flex;justify-content:space-between;align-items:center}
+header b{color:var(--br);font-size:18px}
+nav{display:flex;gap:6px;padding:10px 14px;overflow-x:auto}
+nav button{flex:none;border:1px solid var(--ln);background:var(--s);border-radius:99px;padding:6px 16px;cursor:pointer;font-weight:500}
+nav button[aria-pressed=true]{background:var(--br);color:var(--bi);border-color:var(--br)}
+#v,#lg{max-width:640px;margin:0 auto;padding:6px 14px}
+.c{background:var(--s);border:1px solid var(--ln);border-radius:16px;padding:12px;margin:0 0 10px}
+.row,.r,.r2{display:flex;gap:8px;align-items:center}
+.row{justify-content:space-between;margin-bottom:10px}
+.r{gap:10px}.r2{margin-top:10px;flex-wrap:wrap}
+.g{flex:1;min-width:0}
+.c img,.ph{width:56px;height:56px;border-radius:10px;object-fit:cover;background:var(--so);flex:none}
+.b,.s{border:0;border-radius:12px;padding:9px 16px;cursor:pointer;font-weight:700;min-height:40px}
+.b{background:var(--br);color:var(--bi)}.s{background:var(--so);color:var(--ink)}.dg{color:var(--er)}
+button[disabled]{opacity:.45;cursor:not-allowed}
+label{display:block;margin:10px 0 0;font-weight:500}
+input[type=text],input[type=number],input[type=password],select,textarea{width:100%;margin-top:4px;padding:10px;border:1px solid var(--ln);border-radius:12px;background:var(--bg);min-height:42px}
+textarea{min-height:80px}
+fieldset{border:1px solid var(--ln);border-radius:12px;margin:12px 0 0}
+.ck{display:flex;gap:8px;align-items:center}
+.mu{color:var(--mu);font-size:14px}.er{color:var(--er);margin-top:8px}
+.th{display:inline-flex;flex-direction:column;gap:4px;margin:8px 8px 0 0;align-items:center}
+.th img{width:76px;height:76px}.th span{display:flex;gap:2px}.th button{border:1px solid var(--ln);background:var(--s);border-radius:8px;cursor:pointer;min-width:28px}
+.gr{display:grid;grid-template-columns:1fr 1fr;gap:10px}.k b{font-size:24px;display:block}.k{margin:0}
+.bars{display:flex;align-items:flex-end;height:90px;gap:2px;margin-top:10px}.bars i{flex:1;background:var(--br);min-height:2px;border-radius:2px 2px 0 0}
+ul{margin:6px 0 0;padding:0;list-style:none}li{display:flex;justify-content:space-between;padding:4px 0;border-top:1px solid var(--ln)}
+</style>
+</head>
+<body>
+<div id="lg" hidden>
+  <div class="c" style="margin-top:60px"><h2 style="margin-top:0;color:var(--br)">لوحة المدير</h2>
+    <label>كلمة السر<input type="password" id="pw" autocomplete="current-password"></label>
+    <div class="er" id="le"></div>
+    <div class="r2"><button class="b" id="lb" style="width:100%">دخول</button></div>
+  </div>
+</div>
+<div id="main" hidden>
+  <header><b>Ranim Shop</b><button class="s" id="out">خروج</button></header>
+  <nav id="nav"></nav>
+  <div id="v"></div>
+</div>
+<script>
+var $=function(id){return document.getElementById(id)};
+var CL=/^https:\/\/res\.cloudinary\.com\//;
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function thumb(u,w){return CL.test(u)?esc(u.replace("/upload/","/upload/f_auto,q_auto,w_"+w+"/")):""}
+async function A(p,m,b){
+  var r=await fetch(p,{method:m||"GET",headers:b?{"Content-Type":"application/json"}:{},body:b?JSON.stringify(b):undefined});
+  var j=await r.json().catch(function(){return {}});
+  if(r.status===401){showLogin();throw j}
+  if(!r.ok)throw j;return j;
+}
+function showLogin(){$("main").hidden=true;$("lg").hidden=false;$("pw").focus()}
+$("lb").onclick=async function(){
+  $("le").textContent="";
+  try{await fetch("/api/admin/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:$("pw").value})}).then(function(r){if(!r.ok)throw r.status;});$("pw").value="";start()}
+  catch(e){$("le").textContent=e===429?"محاولات كثيرة، جرّب بعد شوية.":"كلمة السر غير صحيحة."}
+};
+$("pw").onkeydown=function(e){if(e.key==="Enter")$("lb").click()};
+$("out").onclick=async function(){await A("/api/admin/logout","POST",{}).catch(function(){});showLogin()};
+
+var TABS=[["p","المنتجات",pv],["o","الطلبات",ov],["r","الزبونات",rv],["s","التحليلات",sv]];
+function show(k){
+  $("nav").innerHTML=TABS.map(function(t){return '<button data-k="'+t[0]+'" aria-pressed="'+(t[0]===k)+'">'+t[1]+'</button>'}).join("");
+  $("nav").onclick=function(e){if(e.target.dataset.k)show(e.target.dataset.k)};
+  $("v").onclick=null;$("v").onchange=null;
+  TABS.filter(function(t){return t[0]===k})[0][2]().catch(function(){});
+}
+async function start(){
+  try{await A("/api/admin/me");$("lg").hidden=true;$("main").hidden=false;show("p")}catch(e){}
+}
+
+/* ---------- products ---------- */
+var ED={};
+function F(id,l,v,t){return '<label>'+l+'<input id="'+id+'" type="'+(t||"text")+'" value="'+esc(v==null?"":v)+'"></label>'}
+function T(id,l,v){return '<label>'+l+'<textarea id="'+id+'">'+esc(v||"")+'</textarea></label>'}
+async function pv(){
+  var ps=await A("/api/admin/products");
+  $("v").innerHTML='<div class="row"><b>'+ps.length+' / 10</b><button class="b" id="nw"'+(ps.length>=10?" disabled":"")+'>+ منتج جديد</button></div>'+
+  ps.map(function(p,i){return '<div class="c"><div class="r">'+(p.images[0]?'<img src="'+thumb(p.images[0],120)+'" alt="">':'<div class="ph"></div>')+
+    '<div class="g"><b>'+esc(p.name_ar)+'</b><div class="mu">'+p.price+' دج'+(p.active?'':' · مخفي')+(p.stock!=null?' · مخزون '+p.stock:'')+'</div></div></div>'+
+    '<div class="r2"><button class="s" data-u="'+i+'"'+(i?"":" disabled")+'>↑ قدّم</button><button class="s" data-d="'+i+'"'+(i<ps.length-1?"":" disabled")+'>↓ أخّر</button><button class="s" data-e="'+p.id+'">تعديل</button></div></div>'}).join("");
+  $("nw").onclick=function(){pe()};
+  $("v").onclick=async function(e){
+    var d=e.target.dataset;
+    if(d.u!=null||d.d!=null){
+      var i=+(d.u!=null?d.u:d.d),j=d.u!=null?i-1:i+1,t=ps[i];ps[i]=ps[j];ps[j]=t;
+      await A("/api/admin/products/reorder","POST",{ids:ps.map(function(p){return p.id})});pv();
+    }else if(d.e)pe(ps.filter(function(p){return p.id==d.e})[0]);
+  };
+}
+function rim(){
+  $("im").innerHTML=ED.images.map(function(u,i){return '<div class="th"><img src="'+thumb(u,200)+'" alt=""><span><button data-m="'+i+'" data-w="-1">◂</button><button data-m="'+i+'" data-w="1">▸</button><button data-m="'+i+'" data-w="x">✕</button></span></div>'}).join("")||'<div class="mu">ما كاين صور بعد. الصورة الأولى هي الرئيسية.</div>';
+}
+function pe(p){
+  p=p||{images:[],opts:[],active:true};
+  var o=p.opts[0]||{ar:"",fr:"",v:[],vf:[]};ED={id:p.id,images:p.images.slice()};
+  $("v").onclick=null;
+  $("v").innerHTML='<div class="c"><h3 style="margin:0">'+(p.id?"تعديل المنتج":"منتج جديد")+'</h3>'+
+  F("na","الاسم بالعربية",p.name_ar)+F("nf","الاسم بالفرنسية",p.name_fr)+F("pr","السعر (دج)",p.price,"number")+
+  F("st","المخزون (اتركه فارغا = غير محدود)",p.stock,"number")+
+  '<label>الشارة<select id="bd">'+[["","بدون"],["best","الأكثر طلبا"],["new","جديد"],["out","نفد"]].map(function(x){return '<option value="'+x[0]+'"'+(p.badge===x[0]?" selected":"")+'>'+x[1]+'</option>'}).join("")+'</select></label>'+
+  T("da","الوصف بالعربية",p.desc_ar)+T("df","الوصف بالفرنسية",p.desc_fr)+
+  '<fieldset><legend>خيار (اختياري، مثلا اللون)</legend>'+F("oa","اسم الخيار بالعربية",o.ar)+F("of","اسم الخيار بالفرنسية",o.fr)+
+  F("ova","القيم بالعربية (افصل بفاصلة)",o.v.join("، "))+F("ovf","القيم بالفرنسية (نفس الترتيب)",o.vf.join(", "))+'</fieldset>'+
+  '<label>الصور<input type="file" id="fi" accept="image/*" multiple></label><div id="im"></div><div class="mu" id="up"></div>'+
+  '<label class="ck"><input type="checkbox" id="ac"'+(p.active!==false?" checked":"")+'> ظاهر في الموقع</label>'+
+  '<div class="r2"><button class="b" id="sv">حفظ</button><button class="s" id="cn">رجوع</button>'+(p.id?'<button class="s dg" id="dl">حذف</button>':"")+'</div><div class="er" id="er"></div></div>';
+  rim();
+  $("im").onclick=function(e){var d=e.target.dataset;if(d.m==null)return;var i=+d.m;
+    if(d.w==="x")ED.images.splice(i,1);else{var j=i+ +d.w;if(j<0||j>=ED.images.length)return;var t=ED.images[i];ED.images[i]=ED.images[j];ED.images[j]=t}rim()};
+  $("fi").onchange=async function(e){
+    var fs=[].slice.call(e.target.files);
+    for(var k=0;k<fs.length;k++){
+      if(ED.images.length>=8){break}
+      $("up").textContent="جاري رفع الصورة "+(k+1)+" من "+fs.length+"…";
+      try{ED.images.push(await upload(fs[k]));rim()}catch(x){$("er").textContent="فشل رفع صورة. تأكد من مفاتيح Cloudinary."}
+    }
+    $("up").textContent="";e.target.value="";
+  };
+  $("cn").onclick=pv;
+  if(p.id)$("dl").onclick=async function(){if(confirm("حذف هذا المنتج نهائيا؟")){await A("/api/admin/products/"+p.id,"DELETE",{});pv()}};
+  $("sv").onclick=async function(){
+    function sp(i){return $(i).value.split(/[,،]/).map(function(x){return x.trim()}).filter(Boolean)}
+    var body={name_ar:$("na").value,name_fr:$("nf").value,price:$("pr").value,stock:$("st").value,badge:$("bd").value,desc_ar:$("da").value,desc_fr:$("df").value,active:$("ac").checked,images:ED.images,
+      opts:$("oa").value.trim()&&sp("ova").length?[{ar:$("oa").value,fr:$("of").value,v:sp("ova"),vf:sp("ovf")}]:[]};
+    try{await A(ED.id?"/api/admin/products/"+ED.id:"/api/admin/products",ED.id?"PUT":"POST",body);pv()}
+    catch(e){$("er").textContent=e&&e.error==="max"?"وصلت الحد الأقصى (10 منتجات).":"تأكد من الاسم العربي والسعر."}
+  };
+}
+/* Resize to max 1600px and re-encode at high quality, then upload straight to Cloudinary. */
+async function upload(file){
+  var bmp=await createImageBitmap(file),s=Math.min(1,1600/Math.max(bmp.width,bmp.height));
+  var c=document.createElement("canvas");c.width=Math.round(bmp.width*s);c.height=Math.round(bmp.height*s);
+  c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
+  var blob=await new Promise(function(r){c.toBlob(r,"image/jpeg",0.9)});
+  var g=await A("/api/admin/upload-sign","POST",{}),fd=new FormData();
+  fd.append("file",blob);fd.append("api_key",g.key);fd.append("timestamp",g.ts);fd.append("folder",g.folder);fd.append("signature",g.sig);
+  var r=await fetch("https://api.cloudinary.com/v1_1/"+g.cloud+"/image/upload",{method:"POST",body:fd}),j=await r.json();
+  if(!j.secure_url)throw new Error("upload");return j.secure_url;
+}
+
+/* ---------- orders ---------- */
+var ST={new:"جديد",confirmed:"مؤكد",shipping:"في التوصيل",delivered:"مسلّم",canceled:"ملغي"};
+async function ov(){
+  var os=await A("/api/admin/orders");
+  $("v").innerHTML=os.length?os.map(function(o){return '<div class="c"><b>'+esc(o.product_name)+' × '+o.qty+'</b>'+(o.options?'<div>'+esc(o.options)+'</div>':"")+
+    '<div>'+o.total+' دج · '+(o.delivery==="home"?"للمنزل":"للمكتب")+'</div><div>'+esc(o.name)+' · <a href="tel:'+esc(o.phone)+'" dir="ltr">'+esc(o.phone)+'</a></div>'+
+    '<div>'+esc(o.wilaya)+' '+esc(o.commune)+' '+esc(o.address)+'</div><div class="mu">'+new Date(o.created_at).toLocaleString("fr-DZ")+'</div>'+
+    '<select data-o="'+o.id+'">'+Object.keys(ST).map(function(k){return '<option value="'+k+'"'+(o.status===k?" selected":"")+'>'+ST[k]+'</option>'}).join("")+'</select></div>'}).join(""):'<p class="mu">ما كاين حتى طلب بعد.</p>';
+  $("v").onchange=function(e){if(e.target.dataset.o)A("/api/admin/orders/"+e.target.dataset.o,"PUT",{status:e.target.value}).catch(function(){})};
+}
+
+/* ---------- customer reviews ---------- */
+async function rv(){
+  var rs=await A("/api/admin/reviews");ED={img:""};
+  $("v").innerHTML='<div class="c"><b>إضافة رأي زبونة</b><label>الصورة<input type="file" id="ri" accept="image/*"></label><div id="rp" class="mu"></div>'+
+    T("ta","الكلام بالعربية","")+T("tf","الكلام بالفرنسية","")+F("wh","الاسم أو الولاية (مثلا: سارة، قسنطينة)","")+
+    '<div class="r2"><button class="b" id="ra">إضافة</button></div><div class="er" id="re"></div></div>'+
+    rs.map(function(r){return '<div class="c"><div class="r">'+(r.image_url?'<img src="'+thumb(r.image_url,120)+'" alt="">':'<div class="ph"></div>')+
+      '<div class="g">'+esc(r.text_ar)+'<div class="mu">'+esc(r.who)+'</div></div><button class="s dg" data-x="'+r.id+'">حذف</button></div></div>'}).join("");
+  $("ri").onchange=async function(e){
+    $("rp").textContent="جاري الرفع…";
+    try{ED.img=await upload(e.target.files[0]);$("rp").textContent="تم رفع الصورة ✓"}catch(x){$("rp").textContent="فشل الرفع."}
+  };
+  $("ra").onclick=async function(){
+    try{await A("/api/admin/reviews","POST",{image_url:ED.img,text_ar:$("ta").value,text_fr:$("tf").value,who:$("wh").value});rv()}
+    catch(e){$("re").textContent="زيد صورة أو كلام على الأقل."}
+  };
+  $("v").onclick=async function(e){if(e.target.dataset.x&&confirm("حذف هذا الرأي؟")){await A("/api/admin/reviews/"+e.target.dataset.x,"DELETE",{});rv()}};
+}
+
+/* ---------- stats ---------- */
+function LS(t,rows){return '<div class="c"><b>'+t+'</b><ul>'+(rows.map(function(r){return '<li><span>'+esc(r[0])+'</span><b>'+esc(r[1])+'</b></li>'}).join("")||'<li class="mu">لا توجد بيانات بعد</li>')+'</ul></div>'}
+async function sv(){
+  var s=await A("/api/admin/stats"),mx=Math.max.apply(null,[1].concat(s.daily.map(function(d){return d.n})));
+  $("v").innerHTML='<p class="mu">آخر 30 يوم</p><div class="gr">'+[["الزيارات",s.t.visit],["مشاهدات المنتجات",s.t.product_view],["ضغطات إنستا",s.t.ig_click],["ضغطات الاتصال",s.t.call_click],["كل الطلبات",s.o.n],["طلبات جديدة",s.o.fresh],["مبيعات مسلّمة (دج)",s.o.rev]].map(function(x){return '<div class="c k"><div class="mu">'+x[0]+'</div><b>'+(x[1]||0)+'</b></div>'}).join("")+'</div>'+
+    '<div class="c" style="margin-top:10px"><b>الزيارات حسب اليوم</b><div class="bars">'+s.daily.map(function(d){return '<i title="'+esc(d.d)+': '+d.n+'" style="height:'+Math.round(d.n/mx*100)+'%"></i>'}).join("")+'</div></div>'+
+    LS("الأكثر طلبا",s.ordered.map(function(x){return [x.product_name,x.q+" قطعة"]}))+LS("الأكثر مشاهدة",s.viewed.map(function(x){return [x.name_ar,x.n]}));
+}
+start();
+</script>
+</body>
+</html>
